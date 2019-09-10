@@ -1,5 +1,6 @@
 [
   {
+    "name": "Dump my app",
     "kind": "mysql",
     "context": {
       "host": "localhost",

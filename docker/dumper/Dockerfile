@@ -15,7 +15,7 @@ ARG version=unknown
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo \
-        -o /build/dumper \
+        -o /build/dumper/dumper \
         -ldflags \
         "-X github.com/breathbath/dumper/cmd.Version=$version" \
         main.go
@@ -26,10 +26,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo \
 FROM debian:stable-slim
 MAINTAINER Andrey P
 
-WORKDIR /app
-COPY --from=build-env /build/dumper /app/
-COPY config/config.json /app/config.json
-COPY .env /app/.env
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget gzip \
@@ -40,4 +37,9 @@ dpkg -i mysql-apt-config_0.8.12-1_all.deb && \
 apt-get update && \
 apt-get install -y mysql-client
 
-RUN /app/dumper dump
+WORKDIR /app
+COPY --from=build-env /build/dumper/dumper /app/
+COPY config/config.json /app/config.json
+COPY .env /app/.env
+
+CMD /app/dumper dump

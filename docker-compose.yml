@@ -20,7 +20,6 @@ services:
       dockerfile: ./docker/dumper/Dockerfile
     volumes:
       - ./DockerData/Yandex.Disk/data:/root/Yandex.Disk
-      - ./DockerData/Yandex.Disk/config:/root/.config/yandex-disk
     user:
       root
-    entrypoint: yandex-disk -D -d "$DATA_PATH" -a "$PASSWORD_CONFIG_PATH" --proxy=no --exclude-dirs=$EXCLUDE_DIRS
+    entrypoint: /app/dumper dump
