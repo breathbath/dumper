@@ -1,0 +1,15 @@
+[
+  {
+    "kind": "mysql",
+    "context": {
+      "host": "localhost",
+      "port": 3306,
+      "user": "MY_APP_USER",
+      "pass": "MY_APP_PASS",
+      "dbname": "MY_DB",
+      "outputPath": "dumps",
+      "mysqldumpBin": "mysqldump"
+    },
+    "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
+  }
+]

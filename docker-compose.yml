@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+  yandex_disk:
+    build:
+      context: .
+      dockerfile: ./docker/yandex/Dockerfile
+      args:
+        password_config_path: $PASSWORD_CONFIG_PATH
+        data_path: $DATA_PATH
+        exclude_dirs: $EXCLUDE_DIRS
+    volumes:
+      - ./DockerData/Yandex.Disk/data:/root/Yandex.Disk
+      - ./DockerData/Yandex.Disk/config:/root/.config/yandex-disk
+    user:
+      root
+    entrypoint: yandex-disk -D -d "$DATA_PATH" -a "$PASSWORD_CONFIG_PATH" --proxy=no --exclude-dirs=$EXCLUDE_DIRS
+  dumper:
+    build:
+      context: .
+      dockerfile: ./docker/dumper/Dockerfile
+    volumes:
+      - ./DockerData/Yandex.Disk/data:/root/Yandex.Disk
+      - ./DockerData/Yandex.Disk/config:/root/.config/yandex-disk
+    user:
+      root
+    entrypoint: yandex-disk -D -d "$DATA_PATH" -a "$PASSWORD_CONFIG_PATH" --proxy=no --exclude-dirs=$EXCLUDE_DIRS

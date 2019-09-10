@@ -1,0 +1,4 @@
+/.idea
+/.env*
+/DockerData
+/config/config.json

@@ -1,0 +1,34 @@
+# set default shell
+SHELL = bash -e -o pipefail
+
+## Docker related
+DOCKER_EXTRA_ARGS        ?=
+DOCKER_REGISTRY          ?=
+DOCKER_REPOSITORY        ?=
+YANDEX_IMAGE_NAME        := ${DOCKER_REGISTRY}${DOCKER_REPOSITORY}yandex-disk
+DOCKER_BUILD_ARGS        ?= ${DOCKER_EXTRA_ARGS} --build-arg version="${VERSION}"
+
+default: startAll
+
+help:
+	@echo "Usage: make [<target>]"
+	@echo "where available targets are:"
+	@echo
+	@echo "setupYandexDisk      		 : Start yandex setup"
+	@echo "buildYandexDiskDocker         : Build yandex disk docker image"
+	@echo "help             	 		 : Print this help"
+	@echo "startAll             		 : Rebuilds and runs the whole app stack"
+	@echo "buildDumperDocker             : Build dumper docker image"
+	@echo
+
+setupYandexDisk:
+	docker-compose run --entrypoint '' yandex_disk yandex-disk setup
+
+buildYandexDiskDocker:
+	docker-compose build yandex_disk
+
+buildDumperDocker:
+	docker-compose build dumper
+
+startAll:
+	docker-compose up -d
