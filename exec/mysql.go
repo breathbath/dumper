@@ -78,6 +78,7 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		errorWriter:   NewStdErrorWriter(),
 	}
 	err := cmdExec.Execute(
+		fmt.Sprintf("%s...| gzip -9 > %s", dbConfig.DumpBin, fullFileName),
 		"%s -u%s -p%s -h%s -P%d %s | gzip -9 > %s",
 		dbConfig.DumpBin,
 		dbConfig.DbUser,

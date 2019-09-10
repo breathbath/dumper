@@ -12,18 +12,18 @@ type CmdExec struct {
 	errorWriter io.Writer
 }
 
-func (e CmdExec) Execute(format string, args ...interface{}) error {
+func (e CmdExec) Execute(name, format string, args ...interface{}) error {
 	command := fmt.Sprintf(format, args...)
 
 	cmd := exec2.Command("/bin/sh", "-c", command)
 	cmd.Stdout = e.successWriter
 	cmd.Stderr = e.errorWriter
 
-	io2.OutputInfo("", "Will run %s -c %s", "/bin/sh", command)
+	io2.OutputInfo("", "Will run %s", name)
 
 	err := cmd.Run()
 	if err != nil {
-		errMsg := fmt.Sprintf("Command failed \"%s\", %v", command, err)
+		errMsg := fmt.Sprintf("Command failed \"%s\", %v", name, err)
 		_, err = e.errorWriter.Write([]byte(errMsg))
 		if err != nil {
 			return err
