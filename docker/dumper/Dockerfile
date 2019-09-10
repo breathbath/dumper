@@ -39,7 +39,7 @@ apt-get install -y mysql-client
 
 WORKDIR /app
 COPY --from=build-env /build/dumper/dumper /app/
-COPY config/config.json /app/config.json
-COPY .env /app/.env
+COPY config/demo.json /app/config.json
+COPY env.dist /app/.env
 
 CMD /app/dumper dump

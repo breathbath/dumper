@@ -18,6 +18,5 @@ WORKDIR /home/backups/
 ARG password_config_path=/root/.config/yandex-disk/passwd
 ARG data_path=/root/Yandex.Disk
 ARG exclude_dirs
-RUN echo $data_path
 
 CMD yandex-disk -D -d "$data_path" -a "$password_config_path" --proxy=no --exclude-dirs=$exclude_dirs

@@ -1,6 +1,8 @@
 # set default shell
 SHELL = bash -e -o pipefail
 
+VERSION                    ?= $(shell cat ./VERSION)
+
 ## Docker related
 DOCKER_EXTRA_ARGS        ?=
 DOCKER_REGISTRY          ?=
@@ -20,6 +22,12 @@ help:
 	@echo "startAll             		 : Rebuilds and runs the whole app stack"
 	@echo "buildDumperDocker             : Build dumper docker image"
 	@echo
+
+buildAndPush:
+	docker build $(DOCKER_BUILD_ARGS) -t breathbath/yandex-disk:${VERSION} -t breathbath/yandex-disk:latest -f docker/yandex/Dockerfile .
+	docker build $(DOCKER_BUILD_ARGS) -t breathbath/dumper:${VERSION} -t breathbath/dumper:latest -f docker/dumper/Dockerfile .
+	docker push breathbath/yandex-disk:${VERSION}
+	docker push breathbath/dumper:${VERSION}
 
 setupYandexDisk:
 	docker-compose run --entrypoint '' yandex_disk yandex-disk setup
