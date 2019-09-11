@@ -11,22 +11,28 @@ type Router struct {
 	GeneralConfig config.Config
 }
 
-func (r Router) Run() {
+func (r Router) RunErr() error {
 	e, ok := r.Executors[r.GeneralConfig.Kind]
 	if !ok {
-		io.OutputError(fmt.Errorf("No executor registered for '%s'", r.GeneralConfig.Kind), "", "")
-		return
+		return fmt.Errorf("No executor registered for '%s'", r.GeneralConfig.Kind)
 	}
 
 	execConfig, err := e.GetValidConfig(r.GeneralConfig)
 	if err != nil {
-		io.OutputError(err, "", "")
-		return
+		return err
 	}
 
 	err = e.Execute(r.GeneralConfig, execConfig)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r Router) Run() {
+	err := r.RunErr()
+	if err != nil {
 		io.OutputError(err, "", "")
-		return
 	}
 }

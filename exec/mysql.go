@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-type Config struct {
+type MysqlConfig struct {
 	Host       string `json:"host"`
 	Port       int    `json:"port"`
 	DbUser     string `json:"user"`
@@ -26,10 +26,10 @@ type MysqlDumpExecutor struct {
 }
 
 func (mde MysqlDumpExecutor) GetValidConfig(generalConfig config.Config) (interface{}, error) {
-	var dbConf Config
+	var dbConf MysqlConfig
 	err := json.Unmarshal([]byte(*generalConfig.Context), &dbConf)
 	if err != nil {
-		return Config{}, err
+		return MysqlConfig{}, err
 	}
 
 	if dbConf.Host == "" {
@@ -57,7 +57,7 @@ func (mde MysqlDumpExecutor) GetValidConfig(generalConfig config.Config) (interf
 }
 
 func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig interface{}) error {
-	dbConfig, ok := execConfig.(Config)
+	dbConfig, ok := execConfig.(MysqlConfig)
 	if !ok {
 		return fmt.Errorf("Wrong config format for mysql dumper")
 	}

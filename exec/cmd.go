@@ -15,6 +15,10 @@ type CmdExec struct {
 func (e CmdExec) Execute(name, format string, args ...interface{}) error {
 	command := fmt.Sprintf(format, args...)
 
+	if name == "" {
+		name = command
+	}
+
 	cmd := exec2.Command("/bin/sh", "-c", command)
 	cmd.Stdout = e.successWriter
 	cmd.Stderr = e.errorWriter
@@ -23,12 +27,7 @@ func (e CmdExec) Execute(name, format string, args ...interface{}) error {
 
 	err := cmd.Run()
 	if err != nil {
-		errMsg := fmt.Sprintf("Command failed \"%s\", %v", name, err)
-		_, err = e.errorWriter.Write([]byte(errMsg))
-		if err != nil {
-			return err
-		}
-		return nil
+		return fmt.Errorf("Command failed \"%s\", %v", name, err)
 	}
 
 	return nil

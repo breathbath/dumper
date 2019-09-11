@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/dumper/exec"
+	"github.com/breathbath/go_utils/utils/env"
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/io"
 	"github.com/robfig/cron"
@@ -29,14 +30,21 @@ var dumpCmd = &cobra.Command{
 		ers := errs.NewErrorContainer()
 
 		for _, conf := range confs {
-			io.OutputInfo("", "Will schedule '%s' to run '%s'", conf.Name, conf.Period)
-
 			router := exec.Router{
 				Executors: map[string]exec.Executor{
 					"mysql": exec.MysqlDumpExecutor{},
+					"tar": exec.TarExecutor{},
 				},
 				GeneralConfig: conf,
 			}
+
+			if env.ReadEnvBool("RUN_ON_STARTUP", false) {
+				io.OutputInfo("", "Will run '%s'", conf.Name)
+				err := router.RunErr()
+				ers.AddError(err)
+			}
+
+			io.OutputInfo("", "Will schedule '%s' to run '%s'", conf.Name, conf.Period)
 
 			err = c.AddJob(conf.Period, router)
 			if err != nil {

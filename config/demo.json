@@ -1,6 +1,6 @@
 [
   {
-    "name": "Dump my app",
+    "name": "Dump my db",
     "kind": "mysql",
     "context": {
       "host": "localhost",
@@ -10,6 +10,19 @@
       "dbname": "MY_DB",
       "outputPath": "dumps",
       "mysqldumpBin": "mysqldump"
+    },
+    "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
+  },
+  {
+    "name": "Dump my file",
+    "kind": "tar",
+    "context": {
+      "paths": [
+        "folder1",
+        "folder2"
+      ],
+      "outputPath": "dumps",
+      "gzipBin": "mysqldump"
     },
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
   }
