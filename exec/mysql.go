@@ -83,10 +83,10 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		},
 	}
 
-	mysqlVersion := env.ReadEnv("MYSQL_MAJOR_VERSION", "5")
+	mysqlDumpVersion := env.ReadEnv("MYSQLDUMP_MAJOR_VERSION", "5")
 
 	statistics := ""
-	if strings.HasPrefix(mysqlVersion, "8") {
+	if strings.HasPrefix(mysqlDumpVersion, "8") {
 		statistics = "--column-statistics=0"
 	}
 
