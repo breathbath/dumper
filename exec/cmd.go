@@ -17,7 +17,7 @@ type CmdExec struct {
 func (e CmdExec) Execute(format string, args ...interface{}) error {
 	command := fmt.Sprintf(format, args...)
 
-	cmd := exec2.Command("/bin/sh", "-c", command)
+	cmd := exec2.Command("/bin/bash", "-c", command)
 	cmd.Stdout = e.successWriter
 	cmd.Stderr = e.errorWriter
 	cmd.Env = os.Environ()

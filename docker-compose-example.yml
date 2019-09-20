@@ -8,6 +8,8 @@ services:
     user:
       root
     entrypoint: yandex-disk -D -d "$DATA_PATH" -a "$PASSWORD_CONFIG_PATH" --proxy=no --exclude-dirs=$EXCLUDE_DIRS
+    env_file:
+      - ./.env
   dumper:
     image: breathbath/dumper:latest
     volumes:
