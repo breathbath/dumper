@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.4'
 services:
   yandex_disk:
     build:
@@ -18,8 +18,10 @@ services:
     build:
       context: .
       dockerfile: ./docker/dumper/Dockerfile
+      network: host
     volumes:
       - ./DockerData/Yandex.Disk/data:/root/Yandex.Disk
     user:
       root
     entrypoint: /app/dumper dump
+    network_mode: host
