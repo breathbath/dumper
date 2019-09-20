@@ -82,7 +82,6 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 		}
 
 		err := cgexec.Execute(
-			"",
 			"%s -czf %s %s",
 			tarConfig.TarBin,
 			fullFileName,

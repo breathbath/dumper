@@ -76,13 +76,17 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 	cmdExec := CmdExec{
 		successWriter: NewStdSuccessWriter(),
 		errorWriter:   NewStdErrorWriter(),
+		envs: []string{
+			"DB_PASS=" + dbConfig.Pass,
+		},
 	}
+
+	dumpCmd := `(set -o pipefail && %s -u%s -p%s -h%s -P%d %s | gzip -9 > %s)`
 	err := cmdExec.Execute(
-		fmt.Sprintf("%s...| gzip -9 > %s", dbConfig.DumpBin, fullFileName),
-		"%s -u%s -p%s -h%s -P%d %s | gzip -9 > %s",
+		dumpCmd,
 		dbConfig.DumpBin,
 		dbConfig.DbUser,
-		dbConfig.Pass,
+		"${DB_PASS}",
 		dbConfig.Host,
 		dbConfig.Port,
 		dbConfig.DbName,
@@ -91,6 +95,8 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 	if err != nil {
 		return err
 	}
+
+	io.OutputInfo("", "Dumped db '%s' to %s", dbConfig.DbName, fullFileName)
 
 	return nil
 }

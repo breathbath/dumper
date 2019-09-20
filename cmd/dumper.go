@@ -18,6 +18,8 @@ var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "Execute all dumps",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
 		io.OutputInfo("", "Starting dump executor")
 
 		confs, err := config.ParseConfig()
@@ -37,19 +39,20 @@ var dumpCmd = &cobra.Command{
 				},
 				GeneralConfig: conf,
 			}
-
+			var err error
 			if env.ReadEnvBool("RUN_ON_STARTUP", false) {
 				io.OutputInfo("", "Will run '%s'", conf.Name)
-				err := router.RunErr()
+				err = router.RunErr()
 				ers.AddError(err)
 			}
 
-			io.OutputInfo("", "Will schedule '%s' to run '%s'", conf.Name, conf.Period)
-
-			err = c.AddJob(conf.Period, router)
-			if err != nil {
-				ers.AddError(err)
-				continue
+			if err == nil {
+				io.OutputInfo("", "Will schedule '%s' to run '%s'", conf.Name, conf.Period)
+				err = c.AddJob(conf.Period, router)
+				if err != nil {
+					ers.AddError(err)
+					continue
+				}
 			}
 		}
 
