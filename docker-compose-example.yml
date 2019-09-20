@@ -1,0 +1,20 @@
+version: '3.4'
+services:
+  yandex_disk:
+    image: breathbath/yandex-disk:latest
+    volumes:
+      - ./DockerData/backups/Yandex.Disk:/root/Yandex.Disk
+      - ./DockerData/backups/config:/root/.config/yandex-disk
+    user:
+      root
+    entrypoint: yandex-disk -D -d "$DATA_PATH" -a "$PASSWORD_CONFIG_PATH" --proxy=no --exclude-dirs=$EXCLUDE_DIRS
+  dumper:
+    image: breathbath/dumper:latest
+    volumes:
+      - ./dumper_config.json:/app/config.json
+      - ./.env:/app/.env
+      - ./DockerData/backups/Yandex.Disk:/root/Yandex.Disk
+    user:
+      root
+    entrypoint: /app/dumper dump
+    network_mode: host
