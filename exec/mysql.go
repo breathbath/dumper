@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breathbath/dumper/config"
+	"github.com/breathbath/go_utils/utils/env"
 	"github.com/breathbath/go_utils/utils/fs"
 	"github.com/breathbath/go_utils/utils/io"
 	"gopkg.in/validator.v2"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -81,10 +83,18 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		},
 	}
 
-	dumpCmd := `(set -o pipefail && %s -u%s -p%s -h%s -P%d %s | gzip -9 > %s)`
+	mysqlVersion := env.ReadEnv("MYSQL_MAJOR_VERSION", "5")
+
+	statistics := ""
+	if strings.HasPrefix(mysqlVersion, "8") {
+		statistics = "--column-statistics=0"
+	}
+
+	dumpCmd := `(set -o pipefail && %s %s -u%s -p%s -h%s -P%d %s | gzip -9 > %s)`
 	err := cmdExec.Execute(
 		dumpCmd,
 		dbConfig.DumpBin,
+		statistics,
 		dbConfig.DbUser,
 		"${DB_PASS}",
 		dbConfig.Host,
