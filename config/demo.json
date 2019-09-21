@@ -9,7 +9,10 @@
       "pass": "MY_APP_PASS",
       "dbname": "MY_DB",
       "outputPath": "dumps",
-      "mysqldumpBin": "mysqldump"
+      "mysqldumpBin": "mysqldump",
+      "ignoreTables": [
+        "big_table"
+      ]
     },
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
   },

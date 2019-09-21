@@ -15,13 +15,14 @@ import (
 )
 
 type MysqlConfig struct {
-	Host       string `json:"host"`
-	Port       int    `json:"port"`
-	DbUser     string `json:"user"`
-	Pass       string `json:"pass"`
-	DbName     string `json:"dbname",validate:"nonzero"`
-	DumpBin    string `json:"mysqldumpBin",validate:"nonzero"`
-	OutputPath string `json:"outputPath"`
+	Host         string   `json:"host"`
+	Port         int      `json:"port"`
+	DbUser       string   `json:"user"`
+	Pass         string   `json:"pass"`
+	DbName       string   `json:"dbname",validate:"nonzero"`
+	DumpBin      string   `json:"mysqldumpBin",validate:"nonzero"`
+	OutputPath   string   `json:"outputPath"`
+	IgnoreTables []string `json:"ignoreTables,omitempty"`
 }
 
 type MysqlDumpExecutor struct {
@@ -90,7 +91,17 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		statistics = "--column-statistics=0"
 	}
 
-	dumpCmd := `(set -o pipefail && %s %s -u%s -p%s -h%s -P%d %s | gzip -9 > %s)`
+	tablesToIgnoreSql := ""
+	if len(dbConfig.IgnoreTables) > 0 {
+		tablesToIgnore := []string{}
+		for _, tableToIgnore := range dbConfig.IgnoreTables {
+			tableToIgnoreSql := fmt.Sprintf("--ignore-table=%s.%s", dbConfig.DbName, tableToIgnore)
+			tablesToIgnore = append(tablesToIgnore, tableToIgnoreSql)
+		}
+		tablesToIgnoreSql = " " + strings.Join(tablesToIgnore, " ")
+	}
+
+	dumpCmd := `(set -o pipefail && %s %s -u%s -p%s -h%s -P%d%s %s | gzip -9 > %s)`
 	err := cmdExec.Execute(
 		dumpCmd,
 		dbConfig.DumpBin,
@@ -99,6 +110,7 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		"${DB_PASS}",
 		dbConfig.Host,
 		dbConfig.Port,
+		tablesToIgnoreSql,
 		dbConfig.DbName,
 		fullFileName,
 	)
