@@ -3,8 +3,8 @@ module github.com/breathbath/dumper
 go 1.12
 
 require (
-	github.com/breathbath/go_utils v1.3.1
-	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/breathbath/go_utils v1.3.2
+	github.com/joho/godotenv v1.3.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/robfig/cron v1.2.0
 	github.com/spf13/cobra v0.0.5

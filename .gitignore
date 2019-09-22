@@ -2,3 +2,4 @@
 /.env*
 /DockerData
 /config/config.json
+.DS_Store

@@ -7,7 +7,8 @@ import (
 
 func NewStdErrorWriter() io.Writer {
 	return NewCallbackWriter(func(p []byte) (n int, err error) {
-		io2.OutputWarning("", string(p))
+		errTxt := string(p)
+		io2.OutputWarning("", errTxt)
 		n = len(p)
 		return
 	})
@@ -15,7 +16,8 @@ func NewStdErrorWriter() io.Writer {
 
 func NewStdSuccessWriter() io.Writer {
 	return NewCallbackWriter(func(p []byte) (n int, err error) {
-		io2.OutputInfo("", string(p))
+		outputTxt := string(p)
+		io2.OutputInfo("", outputTxt)
 		n = len(p)
 		return
 	})
