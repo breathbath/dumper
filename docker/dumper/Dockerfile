@@ -41,5 +41,6 @@ WORKDIR /app
 COPY --from=build-env /build/dumper/dumper /app/
 COPY config/demo.json /app/config.json
 COPY env.dist /app/.env
+COPY ./scripts /app/scripts
 
 CMD /app/dumper dump
