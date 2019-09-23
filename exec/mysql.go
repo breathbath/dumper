@@ -16,9 +16,10 @@ import (
 )
 
 type Dump struct {
-	IgnoreTables []string `json:"ignoreTables"`
-	Table        string   `json:"table"`
-	Where        string   `json:"where"`
+	IgnoreTables []string `json:"ignoreTables,omitempty"`
+	Table        string   `json:"table,omitempty"`
+	Where        string   `json:"where,omitempty"`
+	Flags        []string `json:"flags,omitempty"`
 }
 
 type MysqlConfig struct {
@@ -256,6 +257,11 @@ func (mde MysqlDumpExecutor) execMysqlDump(cfg MysqlConfig, pipeOutput string, d
 		where = fmt.Sprintf(` --where="%s"`, dump.Where)
 	}
 
+	flagsFlat := ""
+	if len(dump.Flags) > 0 {
+		flagsFlat = " " + strings.Join(dump.Flags, " ")
+	}
+
 	ignoreTablesFlat := ""
 	ignoreTables := make([]string, 0, len(dump.IgnoreTables))
 	for _, it := range dump.IgnoreTables {
@@ -265,8 +271,9 @@ func (mde MysqlDumpExecutor) execMysqlDump(cfg MysqlConfig, pipeOutput string, d
 		ignoreTablesFlat = fmt.Sprintf(" %s", strings.Join(ignoreTables, " "))
 	}
 
-	cmd := fmt.Sprintf(`set -o pipefail && mysqldump%s -u${MUSER} -P${MPORT} -h${MHOST}%s%s ${MDB} %s %s`,
+	cmd := fmt.Sprintf(`set -o pipefail && mysqldump%s -u${MUSER} -P${MPORT} -h${MHOST}%s%s%s ${MDB} %s %s`,
 		statistics,
+		flagsFlat,
 		where,
 		ignoreTablesFlat,
 		dump.Table,

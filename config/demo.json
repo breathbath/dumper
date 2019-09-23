@@ -33,6 +33,12 @@
         {
           "table": "sales",
           "where": "1 ORDER BY date ASC LIMIT 10"
+        },
+        {
+          "table": "private_data",
+          "flags": [
+            "--no-data"
+          ]
         }
       ],
       "isGzipped": true,
