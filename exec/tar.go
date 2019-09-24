@@ -7,7 +7,7 @@ import (
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/fs"
 	"github.com/breathbath/go_utils/utils/io"
-	"gopkg.in/validator.v2"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -17,6 +17,12 @@ type TarConfig struct {
 	Paths      []string `json:"paths",validate:"min=1"`
 	OutputPath string   `json:"outputPath"`
 	TarBin     string   `json:"gzipBin"`
+}
+
+func (tc TarConfig) Validate() error {
+	return validation.ValidateStruct(&tc,
+		validation.Field(&tc.Paths, validation.Required, validation.Length(1, -1)),
+	)
 }
 
 type TarExecutor struct {
@@ -33,14 +39,12 @@ func (te TarExecutor) GetValidConfig(generalConfig config.Config) (interface{}, 
 		gConfig.TarBin = "tar"
 	}
 
-	if ers := validator.Validate(gConfig); ers != nil {
-		return nil, ers
-	}
-
 	_, err = exec.LookPath(gConfig.TarBin)
 	if err != nil {
 		return nil, err
 	}
+
+	err = gConfig.Validate()
 
 	return gConfig, err
 }

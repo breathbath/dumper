@@ -27,7 +27,7 @@ func ParseConfig() ([]Config, error) {
 
 	err = json.Unmarshal(yamlFile, &conf)
 	if err != nil {
-		return conf, err
+		return conf, fmt.Errorf("Cannot parse config file '%s': %v", configPath, err)
 	}
 
 	return conf, nil

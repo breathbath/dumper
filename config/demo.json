@@ -3,16 +3,20 @@
     "name": "Dump my db",
     "kind": "mysql",
     "context": {
-      "sourceUser": "${SOURCE_DB_USER}",
-      "sourcePassword": "${SOURCE_DB_PASS}",
-      "sourceHost": "localhost",
-      "sourcePort": "3306",
-      "sourceDbName": "blog",
-      "targetUser": "${TARGET_DB_USER}",
-      "targetPassword": "${TARGET_DB_PASS}",
-      "targetHost": "localhost",
-      "targetPort": "3306",
-      "targetDbName": "blog_copy",
+      "sourceDb": {
+        "user": "${SOURCE_DB_USER}",
+        "password": "${SOURCE_DB_PASS}",
+        "host": "localhost",
+        "port": "3306",
+        "db": "blog"
+      },
+      "targetDb": {
+        "user": "${TARGET_DB_USER}",
+        "password": "${TARGET_DB_PASS}",
+        "host": "localhost",
+        "port": "3306",
+        "db": "blog_copy"
+      },
       "mysqlDumpVersion": "8 or 5",
       "beforeDump": [
         "UPDATE `user` SET `password`='000000', SET `email`=CONCAT(`id`,'@anonym.me')"
@@ -42,7 +46,8 @@
         }
       ],
       "isGzipped": true,
-      "cleanTargetDb": true
+      "cleanTargetDb": true,
+      "tmpPath": "/tmp"
     },
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
   },
