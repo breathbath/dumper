@@ -3,6 +3,7 @@ package exec
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/fs"
@@ -80,9 +81,9 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 		fullFileName := filepath.Join(tarConfig.OutputPath, fileName)
 
 		io.OutputInfo("", "Making latest %s dump of %s to %s", tarConfig.TarBin, path, fullFileName)
-		cgexec := CmdExec{
-			successWriter: NewStdSuccessWriter(),
-			errorWriter:   NewStdErrorWriter(),
+		cgexec := cli.CmdExec{
+			SuccessWriter: cli.NewStdSuccessWriter(),
+			ErrorWriter:   cli.NewStdErrorWriter(),
 		}
 
 		err := cgexec.Execute(

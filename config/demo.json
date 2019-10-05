@@ -63,5 +63,30 @@
       "gzipBin": "mysqldump"
     },
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
+  },
+  {
+    "name": "Import dump",
+    "kind": "import_dumps",
+    "context": {
+      "dbConn": {
+        "db1": {
+          "user": "${SOURCE_DB1_USER}",
+          "password": "${SOURCE_DB1_PASS}",
+          "host": "localhost",
+          "port": "3306",
+          "db": "${SOURCE_DB_NAME}"
+        },
+        "db2": {
+          "user": "${SOURCE_DB2_USER}",
+          "password": "${SOURCE_DB2_PASS}",
+          "host": "localhost",
+          "port": "3306",
+          "db": "${SOURCE_DB_NAME}"
+        }
+      },
+      "dumpsFolderName": "/tmp/dumps",
+      "isGzipped": true,
+      "tempFolderPath": "/tmp"
+    }
   }
 ]

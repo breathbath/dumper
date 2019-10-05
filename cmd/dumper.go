@@ -32,6 +32,10 @@ var dumpCmd = &cobra.Command{
 		ers := errs.NewErrorContainer()
 
 		for _, conf := range confs {
+			if conf.Period == "" {
+				continue
+			}
+
 			router := exec.Router{
 				Executors: map[string]exec.Executor{
 					"mysql": exec.MysqlDumpExecutor{},
