@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget zip unzip \
-    gnupg gnupg1 gnupg2 zlib1g-dev apt-utils lsb-release
+    gnupg gnupg1 gnupg2 zlib1g-dev apt-utils lsb-release procps
 
 RUN echo "deb http://repo.yandex.ru/yandex-disk/deb/ stable main" | \
 tee -a /etc/apt/sources.list.d/yandex-disk.list > /dev/null && \
