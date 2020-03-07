@@ -94,7 +94,7 @@ func SanitizeTargetDb(dbConn DbConn, scriptsToRun []string) error {
 	ers := errs.NewErrorContainer()
 	for _, q := range scriptsToRun {
 		q = cli.EscapeQuotes(q)
-		cmd := fmt.Sprintf(`echo "%s" | mysql -u${MUSER} -P${MPORT} -h${MHOST} ${MDB}`, q)
+		cmd := fmt.Sprintf(`echo "%s" | mysql -u${MUSER} -P${MPORT} -h${MHOST} -p${MYSQL_PWD} ${MDB}`, q)
 		cmdExec := cli.CmdExec{
 			SuccessWriter: cli.NewStdSuccessWriter(),
 			ErrorWriter:   cli.NewStdErrorWriter(),
@@ -155,7 +155,7 @@ func ExecMysqlDump(cfg DbConn, pipeOutput, mysqldumpVersion string, dump Dump) e
 		lockTables = " --lock-all-tables"
 	}
 
-	cmd := fmt.Sprintf(`set -o pipefail && mysqldump%s -u${MUSER} -P${MPORT} -h${MHOST}%s%s%s%s ${MDB} %s %s`,
+	cmd := fmt.Sprintf(`set -o pipefail && mysqldump%s -u${MUSER} -p${MYSQL_PWD} -P${MPORT} -h${MHOST}%s%s%s%s ${MDB} %s %s`,
 		statistics,
 		flagsFlat,
 		where,
