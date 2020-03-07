@@ -16,7 +16,8 @@ func init() {
 
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
-	Short: "Execute all dumps",
+	Short: "Start cronjob to trigger dumps periodically",
+	Long: "Start cronjob to trigger dumps periodically according to the config defined in CONFIG_PATH env var, to trigger immediately do `RUN_ON_STARTUP=true ./dumper dump`",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		cmd.SilenceErrors = true
