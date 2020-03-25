@@ -196,10 +196,10 @@ func (mde MysqlDumpExecutor) cleanDb(cfg db.DbConn, scriptsPath string) error {
 }
 
 func (mde MysqlDumpExecutor) cleanup(cfg MysqlConfig, scriptsPath string) error {
-	io.OutputInfo("", "Will run cleanup")
 	var err error
 
 	if cfg.CleanTargetDb {
+		io.OutputInfo("", "Will run cleanup")
 		err = mde.cleanDb(cfg.TargetDb, scriptsPath)
 	}
 
@@ -220,7 +220,7 @@ func (mde MysqlDumpExecutor) exportDumpsToFile(mysqldumpVersion string, dumps []
 		dump := db.Dump{}
 		if isGzipped {
 			filePath += ".gz"
-			pipedOutput = fmt.Sprintf("| gzip -9 >> %s", filePath)
+			pipedOutput = fmt.Sprintf("| gzip -9 > %s", filePath)
 		}
 		if len(dumps) == 1 {
 			dump = dumps[0]
