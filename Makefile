@@ -40,3 +40,7 @@ buildDumperDocker:
 
 startAll:
 	docker-compose up -d
+
+pushMysql:
+	docker build $(DOCKER_BUILD_ARGS) -t breathbath/mysql8:${VERSION} -t breathbath/mysql8:latest -f docker/mysql/Dockerfile .
+	docker push breathbath/mysql8:${VERSION}

@@ -2,6 +2,7 @@ package exec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/dumper/config"
@@ -11,20 +12,21 @@ import (
 	"github.com/breathbath/go_utils/utils/fs"
 	"github.com/breathbath/go_utils/utils/io"
 	validation "github.com/go-ozzo/ozzo-validation"
+	"os"
 	"path/filepath"
 	"time"
 )
 
 type MysqlConfig struct {
-	SourceDb         db.DbConn   `json:"sourceDb"`
-	TargetDb         db.DbConn   `json:"targetDb,omitempty"`
-	MysqlDumpVersion string   `json:"mysqlDumpVersion"`
-	BeforeDump       []string `json:"beforeDump,omitempty"`
-	OutputPath       string   `json:"outputPath"`
-	Dumps            []db.Dump   `json:"dumps,omitempty"`
-	IsGzipped        bool     `json:"isGzipped,omitempty"`
-	CleanTargetDb    bool     `json:"cleanTargetDb,omitempty"`
-	TmpPath          string   `json:"tmpPath"`
+	SourceDb         db.DbConn `json:"sourceDb"`
+	TargetDb         db.DbConn `json:"targetDb,omitempty"`
+	MysqlDumpVersion string    `json:"mysqlDumpVersion"`
+	BeforeDump       []string  `json:"beforeDump,omitempty"`
+	OutputPath       string    `json:"outputPath"`
+	Dumps            []db.Dump `json:"dumps,omitempty"`
+	IsGzipped        bool      `json:"isGzipped,omitempty"`
+	CleanTargetDb    bool      `json:"cleanTargetDb,omitempty"`
+	TmpPath          string    `json:"tmpPath"`
 }
 
 func (mc MysqlConfig) Validate() error {
@@ -86,13 +88,25 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 	}()
 
 	if dbConfig.TargetDb.DbName != "" && len(dbConfig.BeforeDump) > 0 {
-		filePath, err := mde.exportDumpsToFile(
-			dbConfig.MysqlDumpVersion,
-			dbConfig.Dumps,
-			dbConfig.SourceDb,
-			dbConfig.TmpPath,
-			dbConfig.IsGzipped,
-		)
+		var filePath string
+		var err error
+		if len(dbConfig.Dumps) > 1 {
+			filePath, err = mde.exportDumpsToFile(
+				dbConfig,
+				dbConfig.SourceDb,
+			)
+		} else {
+			dump := db.Dump{}
+			if len(dbConfig.Dumps) > 0 {
+				dump = dbConfig.Dumps[0]
+			}
+
+			filePath, err = mde.exportDumpToFile(
+				dbConfig,
+				dump,
+				dbConfig.SourceDb,
+			)
+		}
 		if err != nil {
 			return err
 		}
@@ -112,13 +126,23 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 			return err
 		}
 
-		_, err = mde.exportDumpsToFile(
-			dbConfig.MysqlDumpVersion,
-			[]db.Dump{},
-			dbConfig.TargetDb,
-			dbConfig.OutputPath,
-			dbConfig.IsGzipped,
-		)
+		if len(dbConfig.Dumps) > 1 {
+			filePath, err = mde.exportDumpsToFile(
+				dbConfig,
+				dbConfig.TargetDb,
+			)
+		} else {
+			dump := db.Dump{}
+			if len(dbConfig.Dumps) > 0 {
+				dump = dbConfig.Dumps[0]
+			}
+			filePath, err = mde.exportDumpToFile(
+				dbConfig,
+				dump,
+				dbConfig.TargetDb,
+			)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -134,7 +158,22 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		io.OutputWarning("", "Before dump field is ignored since target db value is empty. Dumper doesn't sanitize source db")
 	}
 
-	_, err = mde.exportDumpsToFile(dbConfig.MysqlDumpVersion, dbConfig.Dumps, dbConfig.SourceDb, dbConfig.OutputPath, dbConfig.IsGzipped)
+	if len(dbConfig.Dumps) > 1 {
+		_, err = mde.exportDumpsToFile(
+			dbConfig,
+			dbConfig.SourceDb,
+		)
+	} else {
+		dump := db.Dump{}
+		if len(dbConfig.Dumps) > 0 {
+			dump = dbConfig.Dumps[0]
+		}
+		_, err = mde.exportDumpToFile(
+			dbConfig,
+			dump,
+			dbConfig.SourceDb,
+		)
+	}
 
 	if err != nil {
 		return err
@@ -206,45 +245,94 @@ func (mde MysqlDumpExecutor) cleanup(cfg MysqlConfig, scriptsPath string) error 
 	return err
 }
 
-func (mde MysqlDumpExecutor) generateDumpFilesPath(dbName, outputPath string) string {
-	nowSuffix := time.Now().UTC().Format("02.01.2006.15.04.05.000")
-	fileName := fmt.Sprintf("%s_%s.sql", nowSuffix, dbName)
+func (mde MysqlDumpExecutor) generateDumpFilesPath(prefix, dbName, outputPath string) string {
+	fileName := fmt.Sprintf("%s_%s.sql", prefix, dbName)
 	return fs.JoinPath(outputPath, fileName)
 }
 
-func (mde MysqlDumpExecutor) exportDumpsToFile(mysqldumpVersion string, dumps []db.Dump, dbConn db.DbConn, outputPath string, isGzipped bool) (filePath string, err error) {
-	io.OutputInfo("", "Will execute dump scripts for db '%s'", dbConn.DbName)
-	filePath = mde.generateDumpFilesPath(dbConn.DbName, outputPath)
-	if len(dumps) < 2 {
-		pipedOutput := ""
-		dump := db.Dump{}
-		if isGzipped {
-			filePath += ".gz"
-			pipedOutput = fmt.Sprintf("| gzip -9 > %s", filePath)
-		}
-		if len(dumps) == 1 {
-			dump = dumps[0]
-		}
-
-		err = db.ExecMysqlDump(dbConn, pipedOutput, mysqldumpVersion, dump)
-		if err == nil {
-			io.OutputInfo("", "Dumped db '%s' to %s", dbConn.DbName, filePath)
-		}
-
-		return
+func (mde MysqlDumpExecutor) generateFullPaths(tempDirPath, outputDirPath, dbName string) (tempFilePath, outputFilePath string) {
+	prefix := time.Now().UTC().Format("02.01.2006.15.04.05.000")
+	if tempDirPath == "" {
+		tempDirPath = os.TempDir()
 	}
 
-	ers := errs.NewErrorContainer()
-	for _, dump := range dumps {
-		pipedOutput := fmt.Sprintf(">> %s", filePath)
-		err := db.ExecMysqlDump(dbConn, pipedOutput, mysqldumpVersion, dump)
-		ers.AddError(err)
-	}
-	err = ers.Result("")
-
-	if err == nil {
-		io.OutputInfo("", "Dumped db '%s' to %s", dbConn.DbName, filePath)
-	}
+	tempFilePath = mde.generateDumpFilesPath(prefix, dbName, tempDirPath)
+	outputFilePath = mde.generateDumpFilesPath(prefix, dbName, outputDirPath)
 
 	return
+}
+
+func (mde MysqlDumpExecutor) exportDumpsToFile(dbConf MysqlConfig, dbConn db.DbConn) (filePath string, err error) {
+	if dbConf.OutputPath == "" {
+		return "", errors.New("output dir path should not be empty")
+	}
+
+	io.OutputInfo("", "Will execute dump scripts for db '%s'", dbConn.DbName)
+
+	tempFilePath, outputFilePath := mde.generateFullPaths(dbConf.TmpPath, dbConf.OutputPath, dbConn.DbName)
+
+	ers := errs.NewErrorContainer()
+	for _, dump := range dbConf.Dumps {
+		pipedOutput := fmt.Sprintf(">> %s", tempFilePath)
+		err := db.ExecMysqlDump(dbConn, pipedOutput, dbConf.MysqlDumpVersion, dump)
+		ers.AddError(err)
+	}
+
+	err = ers.Result("")
+	if err != nil {
+		return tempFilePath, err
+	}
+
+	io.OutputInfo("", "Dumped db '%s' to %s", dbConn.DbName, tempFilePath)
+	if !dbConf.IsGzipped {
+		err := os.Rename(tempFilePath, outputFilePath)
+		if err != nil {
+			return "", err
+		}
+
+		return outputFilePath, nil
+	}
+
+	outputFilePath += ".gz"
+	cmd := fmt.Sprintf("cat %s | gzip -9 > %s", tempFilePath, outputFilePath)
+	cmdExec := cli.CmdExec{
+		SuccessWriter: cli.NewStdSuccessWriter(),
+		ErrorWriter:   cli.NewStdErrorWriter(),
+	}
+
+	err = cmdExec.Execute(cmd)
+
+	return outputFilePath, err
+}
+
+func (mde MysqlDumpExecutor) exportDumpToFile(dbConf MysqlConfig, dump db.Dump, dbConn db.DbConn) (filePath string, err error) {
+	if dbConf.OutputPath == "" {
+		return "", errors.New("output dir path should not be empty")
+	}
+
+	io.OutputInfo("", "Will execute dump scripts for db '%s'", dbConn.DbName)
+
+	tempFilePath, outputFilePath := mde.generateFullPaths(dbConf.TmpPath, dbConf.OutputPath, dbConf.SourceDb.DbName)
+
+	pipedOutput := ""
+	if dbConf.IsGzipped {
+		tempFilePath += ".gz"
+		outputFilePath += ".gz"
+		pipedOutput = fmt.Sprintf("| gzip -9 > %s", tempFilePath)
+	}
+
+	err = db.ExecMysqlDump(dbConn, pipedOutput, dbConf.MysqlDumpVersion, dump)
+	if err != nil {
+		return "", err
+	}
+
+	io.OutputInfo("", "Dumped db '%s' to %s", dbConn.DbName, tempFilePath)
+
+	err = os.Rename(tempFilePath, outputFilePath)
+	if err != nil {
+		return "", err
+	}
+	io.OutputInfo("", "Moved db dump %s to %s", dbConn.DbName, outputFilePath)
+
+	return outputFilePath, nil
 }
