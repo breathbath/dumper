@@ -21,6 +21,8 @@ help:
 	@echo "help             	 		 : Print this help"
 	@echo "startAll             		 : Rebuilds and runs the whole app stack"
 	@echo "buildDumperDocker             : Build dumper docker image"
+	@echo "buildAndPush             	 : Builds and pushes docker images for gauth and yandex disk"
+	@echo "pushMysql             	 	 : Builds and pushes docker images for mysql"
 	@echo
 
 buildAndPush:
