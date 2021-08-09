@@ -29,7 +29,9 @@ buildAndPush:
 	docker build $(DOCKER_BUILD_ARGS) -t breathbath/yandex-disk:${VERSION} -t breathbath/yandex-disk:latest -f docker/yandex/Dockerfile .
 	docker build $(DOCKER_BUILD_ARGS) -t breathbath/dumper:${VERSION} -t breathbath/dumper:latest -f docker/dumper/Dockerfile .
 	docker push breathbath/yandex-disk:${VERSION}
+	docker push breathbath/yandex-disk:latest
 	docker push breathbath/dumper:${VERSION}
+	docker push breathbath/dumper:latest
 
 setupYandexDisk:
 	docker-compose run --entrypoint '' yandex_disk yandex-disk setup
@@ -46,3 +48,4 @@ startAll:
 pushMysql:
 	docker build $(DOCKER_BUILD_ARGS) -t breathbath/mysql8:${VERSION} -t breathbath/mysql8:latest -f docker/mysql/Dockerfile .
 	docker push breathbath/mysql8:${VERSION}
+	docker push breathbath/mysql8:latest
