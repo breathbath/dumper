@@ -1,4 +1,4 @@
-FROM mysql:latest
+FROM mysql:8.0.26
 
 RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
 && echo "LC_ALL=en_US.UTF-8" >> /etc/environment \
