@@ -98,6 +98,9 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 				dbConfig,
 				dbConfig.SourceDb,
 			)
+			if cl != nil {
+				defer cl()
+			}
 		} else {
 			dump := db.Dump{}
 			if len(dbConfig.Dumps) > 0 {
@@ -112,10 +115,6 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		}
 		if err != nil {
 			return err
-		}
-
-		if cl != nil {
-			defer cl()
 		}
 
 		err = db.ImportDumpFromFileToDb(dbConfig.TargetDb, filePath)
@@ -134,6 +133,9 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 				dbConfig,
 				dbConfig.TargetDb,
 			)
+			if cl2 != nil {
+				defer cl2()
+			}
 		} else {
 			dump := db.Dump{}
 			if len(dbConfig.Dumps) > 0 {
@@ -144,10 +146,6 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 				dump,
 				dbConfig.TargetDb,
 			)
-		}
-
-		if cl2 != nil {
-			defer cl2()
 		}
 
 		if err != nil {
