@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/breathbath/go_utils/utils/io"
 	"github.com/spf13/cobra"
 )
 
@@ -10,6 +11,8 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() error {
+	io.OutputInfo("", "Version: %s", Version)
+
 	if err := rootCmd.Execute(); err != nil {
 		return err
 	}
