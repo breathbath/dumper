@@ -2,13 +2,14 @@ package cli
 
 import (
 	"fmt"
-	"github.com/breathbath/go_utils/utils/env"
-	io2 "github.com/breathbath/go_utils/utils/io"
 	"io"
 	"os"
 	exec2 "os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/breathbath/go_utils/utils/env"
+	io2 "github.com/breathbath/go_utils/utils/io"
 )
 
 func EscapeQuotes(inpt string) string {
@@ -50,7 +51,7 @@ func (e CmdExec) Execute(format string, args ...interface{}) error {
 
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("Command failed \"%s\", %v", command, err)
+		return fmt.Errorf("command failed \"%s\", %v", command, err)
 	}
 
 	return nil

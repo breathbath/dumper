@@ -1,12 +1,13 @@
 package cli
 
 import (
-	io2 "github.com/breathbath/go_utils/utils/io"
 	"io"
+
+	io2 "github.com/breathbath/go_utils/utils/io"
 )
 
 type CallbackWriter struct {
-	Callback func (p []byte) (n int, err error)
+	Callback func(p []byte) (n int, err error)
 }
 
 func NewStdErrorWriter() io.Writer {
@@ -27,7 +28,7 @@ func NewStdSuccessWriter() io.Writer {
 	})
 }
 
-func NewCallbackWriter(callback func (p []byte) (n int, err error)) CallbackWriter {
+func NewCallbackWriter(callback func(p []byte) (n int, err error)) CallbackWriter {
 	return CallbackWriter{Callback: callback}
 }
 

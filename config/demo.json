@@ -103,7 +103,7 @@
         "folder2"
       ],
       "outputPath": "dumps",
-      "gzipBin": "mysqldump"
+      "gzipBin": "tar"
     },
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
   },

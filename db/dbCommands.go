@@ -2,19 +2,20 @@ package db
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/io"
 	validation "github.com/go-ozzo/ozzo-validation"
-	"strings"
 )
 
-type DbConn struct {
+type ConnConfig struct {
 	User     string `json:"user" validate:"required"`
 	Password string `json:"password" validate:"required"`
 	Host     string `json:"host"`
 	Port     string `json:"port"`
-	DbName   string `json:"db" validate:"required"`
+	DBName   string `json:"db" validate:"required"`
 }
 
 type Dump struct {
@@ -24,16 +25,16 @@ type Dump struct {
 	Flags        []string `json:"flags,omitempty"`
 }
 
-func (dc DbConn) Validate() error {
-	return validation.ValidateStruct(&dc,
+func (dc *ConnConfig) Validate() error {
+	return validation.ValidateStruct(dc,
 		validation.Field(&dc.User, validation.Required),
 		validation.Field(&dc.Password, validation.Required),
-		validation.Field(&dc.DbName, validation.Required),
+		validation.Field(&dc.DBName, validation.Required),
 	)
 }
 
-func ImportDumpFromFileToDb(dbConn DbConn, filePath string) (err error) {
-	io.OutputInfo("", "Will import '%s' to db '%s'", dbConn.DbName, filePath)
+func ImportDumpFromFileToDB(dbConn *ConnConfig, filePath string) (err error) {
+	io.OutputInfo("", "Will import '%s' to db '%s'", dbConn.DBName, filePath)
 
 	cmd := fmt.Sprintf(
 		`set -o pipefail && cat %s | mysql -u${DB_USER} -p${DB_PASS} -P${DB_PORT} -h${DB_HOST} ${DB_NAME}`,
@@ -48,18 +49,18 @@ func ImportDumpFromFileToDb(dbConn DbConn, filePath string) (err error) {
 			"DB_PASS=" + dbConn.Password,
 			"DB_PORT=" + dbConn.Port,
 			"DB_HOST=" + dbConn.Host,
-			"DB_NAME=" + dbConn.DbName,
+			"DB_NAME=" + dbConn.DBName,
 		},
 	}
 
 	return cmdExec.Execute(cmd)
 }
 
-func ExecMysql(dbConn DbConn, sql string, useDbName bool) (err error) {
-	io.OutputInfo("", "Will execute '%s' to db '%s'", sql, dbConn.DbName)
+func ExecMysql(dbConn *ConnConfig, sql string, useDBName bool) (err error) {
+	io.OutputInfo("", "Will execute '%s' to db '%s'", sql, dbConn.DBName)
 
 	dbName := "${DB_NAME}"
-	if !useDbName {
+	if !useDBName {
 		dbName = ""
 	}
 
@@ -77,24 +78,24 @@ func ExecMysql(dbConn DbConn, sql string, useDbName bool) (err error) {
 			"DB_PASS=" + dbConn.Password,
 			"DB_PORT=" + dbConn.Port,
 			"DB_HOST=" + dbConn.Host,
-			"DB_NAME=" + dbConn.DbName,
+			"DB_NAME=" + dbConn.DBName,
 		},
 	}
 
 	return cmdExec.Execute(cmd)
 }
 
-func SanitizeTargetDb(dbConn DbConn, scriptsToRun []string) error {
-	if dbConn.DbName == "" || len(scriptsToRun) == 0 {
+func SanitizeTargetDB(dbConn *ConnConfig, scriptsToRun []string) error {
+	if dbConn.DBName == "" || len(scriptsToRun) == 0 {
 		return nil
 	}
 
-	io.OutputInfo("", "Will sanitize db '%s'", dbConn.DbName)
+	io.OutputInfo("", "Will sanitize db '%s'", dbConn.DBName)
 
 	ers := errs.NewErrorContainer()
 	for _, q := range scriptsToRun {
 		q = cli.EscapeQuotes(q)
-		cmd := fmt.Sprintf(`echo "%s" | mysql -u${MUSER} -P${MPORT} -h${MHOST} -p${MYSQL_PWD} ${MDB}`, q)
+		cmd := fmt.Sprintf(`echo %q | mysql -u${MUSER} -P${MPORT} -h${MHOST} -p${MYSQL_PWD} ${MDB}`, q)
 		cmdExec := cli.CmdExec{
 			SuccessWriter: cli.NewStdSuccessWriter(),
 			ErrorWriter:   cli.NewStdErrorWriter(),
@@ -102,7 +103,7 @@ func SanitizeTargetDb(dbConn DbConn, scriptsToRun []string) error {
 				"MUSER=" + dbConn.User,
 				"MPORT=" + dbConn.Port,
 				"MHOST=" + dbConn.Host,
-				"MDB=" + dbConn.DbName,
+				"MDB=" + dbConn.DBName,
 				"MYSQL_PWD=" + dbConn.Password,
 			},
 		}
@@ -117,12 +118,12 @@ func SanitizeTargetDb(dbConn DbConn, scriptsToRun []string) error {
 	return ers.Result("")
 }
 
-func ExecMysqlDump(cfg DbConn, pipeOutput, mysqldumpVersion string, dump Dump) error {
+func ExecMysqlDump(cfg *ConnConfig, pipeOutput, mysqldumpVersion string, dump *Dump) error {
 	envs := []string{
 		"MUSER=" + cfg.User,
 		"MPORT=" + cfg.Port,
 		"MHOST=" + cfg.Host,
-		"MDB=" + cfg.DbName,
+		"MDB=" + cfg.DBName,
 		"MYSQL_PWD=" + cfg.Password,
 	}
 
@@ -133,7 +134,7 @@ func ExecMysqlDump(cfg DbConn, pipeOutput, mysqldumpVersion string, dump Dump) e
 
 	where := ""
 	if dump.Where != "" {
-		where = fmt.Sprintf(` --where="%s"`, dump.Where)
+		where = fmt.Sprintf(` --where=%q`, dump.Where)
 	}
 
 	flagsFlat := ""
@@ -144,7 +145,7 @@ func ExecMysqlDump(cfg DbConn, pipeOutput, mysqldumpVersion string, dump Dump) e
 	ignoreTablesFlat := ""
 	ignoreTables := make([]string, 0, len(dump.IgnoreTables))
 	for _, it := range dump.IgnoreTables {
-		ignoreTables = append(ignoreTables, fmt.Sprintf("--ignore-table=%s.%s", cfg.DbName, it))
+		ignoreTables = append(ignoreTables, fmt.Sprintf("--ignore-table=%s.%s", cfg.DBName, it))
 	}
 	if len(ignoreTables) > 0 {
 		ignoreTablesFlat = fmt.Sprintf(" %s", strings.Join(ignoreTables, " "))
@@ -174,12 +175,10 @@ func ExecMysqlDump(cfg DbConn, pipeOutput, mysqldumpVersion string, dump Dump) e
 	return cmdExec.Execute(cmd)
 }
 
-func PrepareDbConnConfig(connCfg DbConn) DbConn {
-	connCfg.DbName = cli.GetEnvOrValue(connCfg.DbName)
+func PrepareDBConnConfig(connCfg *ConnConfig) {
+	connCfg.DBName = cli.GetEnvOrValue(connCfg.DBName)
 	connCfg.Host = cli.GetEnvOrValue(connCfg.Host)
 	connCfg.Port = cli.GetEnvOrValue(connCfg.Port)
 	connCfg.User = cli.GetEnvOrValue(connCfg.User)
 	connCfg.Password = cli.GetEnvOrValue(connCfg.Password)
-
-	return connCfg
 }

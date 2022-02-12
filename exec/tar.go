@@ -3,26 +3,27 @@ package exec
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"time"
+
 	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/fs"
 	"github.com/breathbath/go_utils/utils/io"
 	validation "github.com/go-ozzo/ozzo-validation"
-	"os/exec"
-	"path/filepath"
-	"time"
 )
 
 type TarConfig struct {
-	Paths      []string     `json:"paths",validate:"min=1"`
+	Paths      []string     `json:"paths"`
 	OutputPath string       `json:"outputPath"`
 	TarBin     string       `json:"gzipBin"`
 	Upload     *UploaderCfg `json:"upload"`
 }
 
-func (tc TarConfig) Validate() error {
-	return validation.ValidateStruct(&tc,
+func (tc *TarConfig) Validate() error {
+	return validation.ValidateStruct(tc,
 		validation.Field(&tc.Paths, validation.Required, validation.Length(1, -1)),
 	)
 }
@@ -32,8 +33,8 @@ type TarExecutor struct {
 	UploadHelper
 }
 
-func (te TarExecutor) GetValidConfig(generalConfig config.Config) (interface{}, error) {
-	var gConfig TarConfig
+func (te TarExecutor) GetValidConfig(generalConfig *config.Config) (interface{}, error) {
+	gConfig := new(TarConfig)
 	err := json.Unmarshal([]byte(*generalConfig.Context), &gConfig)
 	if err != nil {
 		return gConfig, err
@@ -61,10 +62,10 @@ func (te TarExecutor) GetValidConfig(generalConfig config.Config) (interface{}, 
 	return gConfig, err
 }
 
-func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{}) error {
-	tarConfig, ok := execConfig.(TarConfig)
+func (te TarExecutor) Execute(generalConfig *config.Config, execConfig interface{}) error {
+	tarConfig, ok := execConfig.(*TarConfig)
 	if !ok {
-		return fmt.Errorf("Wrong config format for gzip dumper")
+		return fmt.Errorf("wrong config format for gzip dumper")
 	}
 
 	var err error
@@ -80,11 +81,11 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 	ers := errs.NewErrorContainer()
 	for _, path := range tarConfig.Paths {
 		lastFolderName := filepath.Base(path)
-		fileName := fmt.Sprintf("%s_%s.tar.gz", lastFolderName, nowSuffix)
+		fileName := fmt.Sprintf("%s_%s.tar%s", lastFolderName, nowSuffix, GzExt)
 		if tarConfig.OutputPath != "" && !fs.FileExists(tarConfig.OutputPath) {
-			err := fs.MkDir(tarConfig.OutputPath)
+			err = fs.MkDir(tarConfig.OutputPath)
 			if err != nil {
-				ers.AddError(fmt.Errorf("Cannot create directory %s: %v", tarConfig.OutputPath, err))
+				ers.AddError(fmt.Errorf("cannot create directory %s: %v", tarConfig.OutputPath, err))
 				continue
 			}
 		}
@@ -97,7 +98,7 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 			ErrorWriter:   cli.NewStdErrorWriter(),
 		}
 
-		err := cgexec.Execute(
+		err = cgexec.Execute(
 			"%s -czf %s %s",
 			tarConfig.TarBin,
 			fullFileName,

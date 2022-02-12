@@ -1,16 +1,19 @@
 package yand
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/breathbath/go_utils/utils/env"
-	io2 "github.com/breathbath/go_utils/utils/io"
-	validation "github.com/go-ozzo/ozzo-validation"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/breathbath/go_utils/utils/env"
+	io2 "github.com/breathbath/go_utils/utils/io"
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 const YandexUploader = "yandex"
@@ -71,7 +74,11 @@ func (s *Service) Upload(path string) error {
 
 	targetPath := join(s.cfg.URL, fileName)
 
-	req, err := http.NewRequest(http.MethodPut, targetPath, file)
+	const requestTimeout = 10
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, targetPath, file)
 	if err != nil {
 		return err
 	}
@@ -99,6 +106,6 @@ func (s *Service) Upload(path string) error {
 	return nil
 }
 
-func join(path0 string, path1 string) string {
+func join(path0, path1 string) string {
 	return strings.TrimSuffix(path0, "/") + "/" + strings.TrimPrefix(path1, "/")
 }

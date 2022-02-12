@@ -2,8 +2,9 @@ package exec
 
 import (
 	"fmt"
-	"github.com/breathbath/go_utils/utils/io"
 	"os"
+
+	"github.com/breathbath/go_utils/utils/io"
 )
 
 type Uploader interface {
@@ -48,9 +49,9 @@ func (uh UploadHelper) uploadIfNeeded(filepath string, cfg *UploaderCfg, registe
 
 	if cfg.DeleteAfterUpload {
 		defer func() {
-			err := os.Remove(filepath)
-			if err != nil {
-				io.OutputError(err, "", "Failed to delete %s", filepath)
+			e := os.Remove(filepath)
+			if e != nil {
+				io.OutputError(e, "", "Failed to delete %s", filepath)
 			} else {
 				io.OutputInfo("", "deleted %s", filepath)
 			}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/dumper/exec"
 	"github.com/breathbath/go_utils/utils/io"
@@ -10,7 +11,7 @@ import (
 
 var connNamesToImport *[]string
 
-func init() {
+func initImportDumps() {
 	connNamesToImport = importDumpsCmd.Flags().StringSlice("conns", []string{}, "list of conn names like db1,db2")
 	rootCmd.AddCommand(importDumpsCmd)
 }
@@ -30,21 +31,21 @@ var importDumpsCmd = &cobra.Command{
 		}
 
 		importer := exec.MysqlImportExecutor{}
-		var importConf exec.ImportConfig
+		importConf := new(exec.ImportConfig)
 		var lastErr error
 		for _, conf := range confs {
 			if conf.Kind != "import_dumps" {
 				continue
 			}
 
-			err := json.Unmarshal([]byte(*conf.Context), &importConf)
+			err := json.Unmarshal([]byte(*conf.Context), importConf)
 			if err != nil {
 				lastErr = err
 				io.OutputError(err, "", "Failed to parse config: %v", err)
 				continue
 			}
 
-			err = importer.Execute(conf, importConf, *connNamesToImport)
+			err = importer.Execute(importConf, *connNamesToImport)
 			if err != nil {
 				lastErr = err
 				io.OutputError(err, "", "Failed to execute importer: %v", err)

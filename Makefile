@@ -49,3 +49,12 @@ pushMysql:
 	docker build $(DOCKER_BUILD_ARGS) -t breathbath/mysql8:${VERSION} -t breathbath/mysql8:latest -f docker/mysql/Dockerfile .
 	docker push breathbath/mysql8:${VERSION}
 	docker push breathbath/mysql8:latest
+
+.PHONY: lint
+lint:
+	golangci-lint run
+
+.PHONY: fmt
+fmt:
+	 goimports -w .
+	 gofmt -w .

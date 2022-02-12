@@ -11,14 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func initDumper() {
 	rootCmd.AddCommand(dumpCmd)
 }
 
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "Start cronjob to trigger dumps periodically",
-	Long:  "Start cronjob to trigger dumps periodically according to the config defined in CONFIG_PATH env var, to trigger immediately do `RUN_ON_STARTUP=true ./dumper dump`",
+	Long: "Start cronjob to trigger dumps periodically according to the config " +
+		"defined in CONFIG_PATH env var, to trigger immediately do `RUN_ON_STARTUP=true ./dumper dump`",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		cmd.SilenceErrors = true
@@ -35,6 +36,7 @@ var dumpCmd = &cobra.Command{
 
 		for _, conf := range confs {
 			if conf.Period == "" {
+				io.OutputWarning("", "config '%s' has empty execution period, will skip it", conf.Name)
 				continue
 			}
 
@@ -55,7 +57,6 @@ var dumpCmd = &cobra.Command{
 				},
 				GeneralConfig: conf,
 			}
-			var err error
 			if env.ReadEnvBool("RUN_ON_STARTUP", false) {
 				io.OutputInfo("", "Will run '%s'", conf.Name)
 				err = router.RunErr()

@@ -13,6 +13,9 @@ var rootCmd = &cobra.Command{
 func Execute() error {
 	io.OutputInfo("", "Version: %s", Version)
 
+	initImportDumps()
+	initVersion()
+	initDumper()
 	if err := rootCmd.Execute(); err != nil {
 		return err
 	}
