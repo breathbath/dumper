@@ -19,9 +19,11 @@ import (
 const YandexUploader = "yandex"
 
 type UploadConfig struct {
-	URL      string
-	UserName string
-	Pass     string
+	URL              string
+	UserName         string
+	Pass             string
+	UploadTimeoutRaw string
+	UploadTimeout    time.Duration
 }
 
 func (mc *UploadConfig) Validate() error {
@@ -29,6 +31,17 @@ func (mc *UploadConfig) Validate() error {
 		validation.Field(&mc.URL, validation.Required),
 		validation.Field(&mc.UserName, validation.Required),
 		validation.Field(&mc.Pass, validation.Required),
+		validation.Field(&mc.UploadTimeoutRaw, validation.By(func(value interface{}) error {
+			valStr := fmt.Sprint(value)
+			if valStr != "" {
+				_, err := time.ParseDuration(valStr)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})),
 	}
 
 	return validation.ValidateStruct(mc, fields...)
@@ -39,6 +52,13 @@ func NewConfigFromEnvs() *UploadConfig {
 	cfg.URL = env.ReadEnv("YAND_UPLOADER_URL", "")
 	cfg.UserName = env.ReadEnv("YAND_UPLOADER_LOGIN", "")
 	cfg.Pass = env.ReadEnv("YAND_UPLOADER_PASS", "")
+	cfg.UploadTimeoutRaw = env.ReadEnv("YAND_UPLOADER_TIMEOUT", "")
+	if cfg.UploadTimeoutRaw != "" {
+		timeout, err := time.ParseDuration(cfg.UploadTimeoutRaw)
+		if err == nil {
+			cfg.UploadTimeout = timeout
+		}
+	}
 
 	return cfg
 }
@@ -59,7 +79,7 @@ func (s *Service) Upload(path string) error {
 		return err
 	}
 
-	io2.OutputInfo("", "Will upload file to %s for user %s", s.cfg.URL, s.cfg.UserName)
+	io2.OutputInfo("", "Will upload file %s to %s for user %s", path, s.cfg.URL, s.cfg.UserName)
 
 	fileName := filepath.Base(path)
 
@@ -74,9 +94,12 @@ func (s *Service) Upload(path string) error {
 
 	targetPath := join(s.cfg.URL, fileName)
 
-	const requestTimeout = 10
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*requestTimeout)
-	defer cancel()
+	ctx := context.Background()
+	var cancel context.CancelFunc
+	if s.cfg.UploadTimeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), s.cfg.UploadTimeout)
+		defer cancel()
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, targetPath, file)
 	if err != nil {
@@ -84,7 +107,8 @@ func (s *Service) Upload(path string) error {
 	}
 	req.Header.Set("Authorization", auth)
 
-	resp, err := http.DefaultClient.Do(req)
+	cl := &http.Client{}
+	resp, err := cl.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call yandex disk api: %v", err)
 	}
