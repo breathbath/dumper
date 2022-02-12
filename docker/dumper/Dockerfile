@@ -24,13 +24,13 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo \
 # Image creation stage
 
 FROM debian:stable-slim
-MAINTAINER Andrey P
+MAINTAINER Andrey Pozolotin
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget gzip \
-    gnupg gnupg1 gnupg2 zlib1g-dev apt-utils lsb-release
+    gnupg gnupg1 gnupg2 zlib1g-dev apt-utils lsb-release ca-certificates
 
 RUN wget -c https://repo.mysql.com//mysql-apt-config_0.8.22-1_all.deb --no-check-certificate && \
 dpkg -i mysql-apt-config_0.8.22-1_all.deb && \
