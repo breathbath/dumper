@@ -52,9 +52,52 @@
     "period": "@daily,0 30 * * * *,@hourly,@every 1h30m,@yearly,@monthly,@weekly"
   },
   {
+    "name": "Simple dump",
+    "kind": "mysql",
+    "context": {
+      "sourceDb": {
+        "user": "root",
+        "password": "root",
+        "host": "mysql8",
+        "port": "3306",
+        "db": "localhost"
+      },
+      "mysqlDumpVersion": "8",
+      "upload": {
+        "name": "yandex",
+        "delete_after_upload": true
+      },
+      "outputPath": "/dumps",
+      "isGzipped": true,
+      "tmpPath": "/tmp",
+      "dumps": [
+        {
+          "flags": [
+            "--no-tablespaces"
+          ],
+          "ignoreTables": [
+            "large_table"
+          ]
+        },
+        {
+          "table": "large_table",
+          "flags": [
+            "--no-data",
+            "--no-tablespaces"
+          ]
+        }
+      ]
+    },
+    "period": "@every 23h"
+  },
+  {
     "name": "Dump my file",
     "kind": "tar",
     "context": {
+      "upload": {
+        "name": "yandex",
+        "delete_after_upload": true
+      },
       "paths": [
         "folder1",
         "folder2"

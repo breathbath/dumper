@@ -20,15 +20,16 @@ import (
 type Clean func()
 
 type MysqlConfig struct {
-	SourceDb         db.DbConn `json:"sourceDb"`
-	TargetDb         db.DbConn `json:"targetDb,omitempty"`
-	MysqlDumpVersion string    `json:"mysqlDumpVersion"`
-	BeforeDump       []string  `json:"beforeDump,omitempty"`
-	OutputPath       string    `json:"outputPath"`
-	Dumps            []db.Dump `json:"dumps,omitempty"`
-	IsGzipped        bool      `json:"isGzipped,omitempty"`
-	CleanTargetDb    bool      `json:"cleanTargetDb,omitempty"`
-	TmpPath          string    `json:"tmpPath"`
+	SourceDb         db.DbConn    `json:"sourceDb"`
+	TargetDb         db.DbConn    `json:"targetDb,omitempty"`
+	MysqlDumpVersion string       `json:"mysqlDumpVersion"`
+	BeforeDump       []string     `json:"beforeDump,omitempty"`
+	OutputPath       string       `json:"outputPath"`
+	Dumps            []db.Dump    `json:"dumps,omitempty"`
+	IsGzipped        bool         `json:"isGzipped,omitempty"`
+	CleanTargetDb    bool         `json:"cleanTargetDb,omitempty"`
+	TmpPath          string       `json:"tmpPath"`
+	Upload           *UploaderCfg `json:"upload"`
 }
 
 func (mc MysqlConfig) Validate() error {
@@ -45,6 +46,8 @@ func (mc MysqlConfig) Validate() error {
 }
 
 type MysqlDumpExecutor struct {
+	Uploaders map[string]Uploader
+	UploadHelper
 }
 
 func (mde MysqlDumpExecutor) GetValidConfig(generalConfig config.Config) (interface{}, error) {
@@ -55,8 +58,16 @@ func (mde MysqlDumpExecutor) GetValidConfig(generalConfig config.Config) (interf
 	}
 
 	err = dbConf.Validate()
+	if err != nil {
+		return nil, err
+	}
 
-	return dbConf, err
+	err = mde.validateConfig(dbConf.Upload, mde.Uploaders)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbConf, nil
 }
 
 func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig interface{}) error {
@@ -90,64 +101,12 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 	}()
 
 	if dbConfig.TargetDb.DbName != "" && len(dbConfig.BeforeDump) > 0 {
-		var filePath string
-		var err error
-		var cl Clean
-		if len(dbConfig.Dumps) > 1 {
-			filePath, cl, err = mde.exportDumpsToFile(
-				dbConfig,
-				dbConfig.SourceDb,
-			)
-			if cl != nil {
-				defer cl()
-			}
-		} else {
-			dump := db.Dump{}
-			if len(dbConfig.Dumps) > 0 {
-				dump = dbConfig.Dumps[0]
-			}
-
-			filePath, err = mde.exportDumpToFile(
-				dbConfig,
-				dump,
-				dbConfig.SourceDb,
-			)
-		}
+		targetFilePath, err := mde.dumpPrepared(dbConfig)
 		if err != nil {
 			return err
 		}
 
-		err = db.ImportDumpFromFileToDb(dbConfig.TargetDb, filePath)
-		if err != nil {
-			return err
-		}
-
-		err = db.SanitizeTargetDb(dbConfig.TargetDb, dbConfig.BeforeDump)
-		if err != nil {
-			return err
-		}
-
-		var cl2 Clean
-		if len(dbConfig.Dumps) > 1 {
-			filePath, cl2, err = mde.exportDumpsToFile(
-				dbConfig,
-				dbConfig.TargetDb,
-			)
-			if cl2 != nil {
-				defer cl2()
-			}
-		} else {
-			dump := db.Dump{}
-			if len(dbConfig.Dumps) > 0 {
-				dump = dbConfig.Dumps[0]
-			}
-			filePath, err = mde.exportDumpToFile(
-				dbConfig,
-				dump,
-				dbConfig.TargetDb,
-			)
-		}
-
+		err = mde.uploadIfNeeded(targetFilePath, dbConfig.Upload, mde.Uploaders)
 		if err != nil {
 			return err
 		}
@@ -163,32 +122,67 @@ func (mde MysqlDumpExecutor) Execute(generalConfig config.Config, execConfig int
 		io.OutputWarning("", "Before dump field is ignored since target db value is empty. Dumper doesn't sanitize source db")
 	}
 
-	var cl Clean
-	if len(dbConfig.Dumps) > 1 {
-		_, cl, err = mde.exportDumpsToFile(
-			dbConfig,
-			dbConfig.SourceDb,
-		)
-		if cl != nil {
-			defer cl()
-		}
-	} else {
-		dump := db.Dump{}
-		if len(dbConfig.Dumps) > 0 {
-			dump = dbConfig.Dumps[0]
-		}
-		_, err = mde.exportDumpToFile(
-			dbConfig,
-			dump,
-			dbConfig.SourceDb,
-		)
+	targetFilePath, err := mde.dumpByConfig(dbConfig, dbConfig.SourceDb)
+	if err != nil {
+		return err
 	}
 
+	err = mde.uploadIfNeeded(targetFilePath, dbConfig.Upload, mde.Uploaders)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (mde MysqlDumpExecutor) dumpPrepared(dbConfig MysqlConfig) (targetFilePath string, err error) {
+	filePath, err := mde.dumpByConfig(dbConfig, dbConfig.SourceDb)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.ImportDumpFromFileToDb(dbConfig.TargetDb, filePath)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.SanitizeTargetDb(dbConfig.TargetDb, dbConfig.BeforeDump)
+	if err != nil {
+		return "", err
+	}
+
+	targetFilePath, err = mde.dumpByConfig(dbConfig, dbConfig.TargetDb)
+
+	if err != nil {
+		return targetFilePath, err
+	}
+
+	return targetFilePath, nil
+}
+
+func (mde MysqlDumpExecutor) dumpByConfig(dbConfig MysqlConfig, dbConn db.DbConn) (dumpFilePath string, err error) {
+	if len(dbConfig.Dumps) > 1 {
+		dumpFilePath, cl, err := mde.exportDumpsToFile(
+			dbConfig,
+			dbConn,
+		)
+		if cl != nil {
+			defer cl()
+		}
+		return dumpFilePath, err
+	}
+
+	dump := db.Dump{}
+	if len(dbConfig.Dumps) > 0 {
+		dump = dbConfig.Dumps[0]
+	}
+	dumpFilePath, err = mde.exportDumpToFile(
+		dbConfig,
+		dump,
+		dbConn,
+	)
+
+	return dumpFilePath, err
 }
 
 func (mde MysqlDumpExecutor) prepareOutputPath(cfg MysqlConfig) error {

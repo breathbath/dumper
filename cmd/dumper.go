@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/dumper/exec"
+	"github.com/breathbath/dumper/yand"
 	"github.com/breathbath/go_utils/utils/env"
 	"github.com/breathbath/go_utils/utils/errs"
 	"github.com/breathbath/go_utils/utils/io"
@@ -17,7 +18,7 @@ func init() {
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "Start cronjob to trigger dumps periodically",
-	Long: "Start cronjob to trigger dumps periodically according to the config defined in CONFIG_PATH env var, to trigger immediately do `RUN_ON_STARTUP=true ./dumper dump`",
+	Long:  "Start cronjob to trigger dumps periodically according to the config defined in CONFIG_PATH env var, to trigger immediately do `RUN_ON_STARTUP=true ./dumper dump`",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 		cmd.SilenceErrors = true
@@ -37,10 +38,20 @@ var dumpCmd = &cobra.Command{
 				continue
 			}
 
+			cfg := yand.NewConfigFromEnvs()
+			yandexUploader := yand.NewService(cfg)
+
+			uploaders := map[string]exec.Uploader{
+				yand.YandexUploader: yandexUploader,
+			}
 			router := exec.Router{
 				Executors: map[string]exec.Executor{
-					"mysql": exec.MysqlDumpExecutor{},
-					"tar": exec.TarExecutor{},
+					"mysql": exec.MysqlDumpExecutor{
+						Uploaders: uploaders,
+					},
+					"tar": exec.TarExecutor{
+						Uploaders: uploaders,
+					},
 				},
 				GeneralConfig: conf,
 			}

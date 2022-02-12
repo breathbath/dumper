@@ -15,9 +15,10 @@ import (
 )
 
 type TarConfig struct {
-	Paths      []string `json:"paths",validate:"min=1"`
-	OutputPath string   `json:"outputPath"`
-	TarBin     string   `json:"gzipBin"`
+	Paths      []string     `json:"paths",validate:"min=1"`
+	OutputPath string       `json:"outputPath"`
+	TarBin     string       `json:"gzipBin"`
+	Upload     *UploaderCfg `json:"upload"`
 }
 
 func (tc TarConfig) Validate() error {
@@ -27,6 +28,8 @@ func (tc TarConfig) Validate() error {
 }
 
 type TarExecutor struct {
+	Uploaders map[string]Uploader
+	UploadHelper
 }
 
 func (te TarExecutor) GetValidConfig(generalConfig config.Config) (interface{}, error) {
@@ -46,6 +49,14 @@ func (te TarExecutor) GetValidConfig(generalConfig config.Config) (interface{}, 
 	}
 
 	err = gConfig.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	err = te.validateConfig(gConfig.Upload, te.Uploaders)
+	if err != nil {
+		return nil, err
+	}
 
 	return gConfig, err
 }
@@ -80,7 +91,7 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 
 		fullFileName := filepath.Join(tarConfig.OutputPath, fileName)
 
-		io.OutputInfo("", "Making latest %s dump of %s to %s", tarConfig.TarBin, path, fullFileName)
+		io.OutputInfo("", "archiving from %s to %s", path, fullFileName)
 		cgexec := cli.CmdExec{
 			SuccessWriter: cli.NewStdSuccessWriter(),
 			ErrorWriter:   cli.NewStdErrorWriter(),
@@ -92,8 +103,25 @@ func (te TarExecutor) Execute(generalConfig config.Config, execConfig interface{
 			fullFileName,
 			path,
 		)
-		ers.AddError(err)
+
+		if err != nil {
+			ers.AddError(err)
+			continue
+		}
+
+		io.OutputInfo("", "successfully archived %s to %s", path, fullFileName)
+
+		err = te.uploadIfNeeded(fullFileName, tarConfig.Upload, te.Uploaders)
+		if err != nil {
+			ers.AddError(err)
+			continue
+		}
 	}
 
-	return ers.Result(" ")
+	err = ers.Result(" ")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
