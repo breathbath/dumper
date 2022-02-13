@@ -3,3 +3,5 @@
 /DockerData
 /config/config.json
 .DS_Store
+/docker-compose.yml
+/config/configTest.json
