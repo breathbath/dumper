@@ -201,7 +201,7 @@ func (s *Service) Upload(path string) error {
 }
 
 func (s *Service) uploadToTempUploadURL(ctx context.Context, tempUploadURL, method string, file *os.File) error {
-	io2.OutputInfo("", "Will upload file %s to %q, method %q", file.Name(), uploadURL, method)
+	io2.OutputInfo("", "Will upload file %s to %q, method %q", file.Name(), tempUploadURL, method)
 
 	req, err := http.NewRequestWithContext(ctx, method, tempUploadURL, file)
 	if err != nil {
