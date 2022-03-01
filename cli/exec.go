@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/breathbath/go_utils/utils/env"
-	io2 "github.com/breathbath/go_utils/utils/io"
+	"github.com/breathbath/go_utils/v3/pkg/env"
+	io2 "github.com/breathbath/go_utils/v3/pkg/io"
 )
 
 func EscapeQuotes(inpt string) string {

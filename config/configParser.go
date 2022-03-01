@@ -3,10 +3,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breathbath/go_utils/v3/pkg/env"
+	"github.com/breathbath/go_utils/v3/pkg/fs"
 	"os"
-
-	"github.com/breathbath/go_utils/utils/env"
-	"github.com/breathbath/go_utils/utils/fs"
 )
 
 func ParseConfig() ([]*Config, error) {

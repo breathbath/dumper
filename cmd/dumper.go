@@ -4,9 +4,9 @@ import (
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/dumper/exec"
 	"github.com/breathbath/dumper/yand"
-	"github.com/breathbath/go_utils/utils/env"
-	"github.com/breathbath/go_utils/utils/errs"
-	"github.com/breathbath/go_utils/utils/io"
+	"github.com/breathbath/go_utils/v3/pkg/env"
+	"github.com/breathbath/go_utils/v3/pkg/errs"
+	"github.com/breathbath/go_utils/v3/pkg/io"
 	"github.com/robfig/cron"
 	"github.com/spf13/cobra"
 )

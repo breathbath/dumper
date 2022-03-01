@@ -3,7 +3,7 @@ package cli
 import (
 	"io"
 
-	io2 "github.com/breathbath/go_utils/utils/io"
+	io2 "github.com/breathbath/go_utils/v3/pkg/io"
 )
 
 type CallbackWriter struct {

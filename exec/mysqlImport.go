@@ -9,9 +9,9 @@ import (
 
 	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/dumper/db"
-	errs2 "github.com/breathbath/go_utils/utils/errs"
-	"github.com/breathbath/go_utils/utils/fs"
-	"github.com/breathbath/go_utils/utils/io"
+	errs2 "github.com/breathbath/go_utils/v3/pkg/errs"
+	"github.com/breathbath/go_utils/v3/pkg/fs"
+	"github.com/breathbath/go_utils/v3/pkg/io"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
@@ -40,31 +40,34 @@ func (mie MysqlImportExecutor) Execute(
 	conf *ImportConfig,
 	connNamesToImport []string,
 ) error {
-	files, err := fs.ReadFilesInDirectory(conf.DumpsFolderName)
-	if err != nil {
-		return fmt.Errorf("dump dir read failure %v", err)
-	}
-
 	var latestFile os.FileInfo
 	lastFileTimestamp := time.Time{}
 	var fileTime time.Time
-	for _, file := range files {
+
+	err := filepath.Walk(conf.DumpsFolderName, func(path string, info os.FileInfo, err error) error {
 		regx := regexp.MustCompile(`^\d{2}\.\d{2}\.\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{3}`)
-		timestampStr := regx.FindString(file.Name())
+		timestampStr := regx.FindString(info.Name())
 		if timestampStr == "" {
-			continue
+			return nil
 		}
 		fileTime, err = time.Parse("02.01.2006.15.04.05.000", timestampStr)
 		if err != nil {
 			io.OutputWarning("", "Cannot parse %s as time str", timestampStr)
-			continue
+			return nil
 		}
 
 		if fileTime.After(lastFileTimestamp) {
 			lastFileTimestamp = fileTime
-			latestFile = file
+			latestFile = info
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("dump dir read failure %v", err)
 	}
+
 	if latestFile == nil {
 		io.OutputWarning("", "Didn't find any dump file")
 		return nil

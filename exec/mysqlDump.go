@@ -11,10 +11,10 @@ import (
 	"github.com/breathbath/dumper/cli"
 	"github.com/breathbath/dumper/config"
 	"github.com/breathbath/dumper/db"
-	"github.com/breathbath/go_utils/utils/env"
-	"github.com/breathbath/go_utils/utils/errs"
-	"github.com/breathbath/go_utils/utils/fs"
-	"github.com/breathbath/go_utils/utils/io"
+	"github.com/breathbath/go_utils/v3/pkg/env"
+	"github.com/breathbath/go_utils/v3/pkg/errs"
+	"github.com/breathbath/go_utils/v3/pkg/fs"
+	"github.com/breathbath/go_utils/v3/pkg/io"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 

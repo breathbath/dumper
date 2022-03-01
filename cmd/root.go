@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/breathbath/go_utils/utils/io"
+	"github.com/breathbath/go_utils/v3/pkg/io"
 	"github.com/spf13/cobra"
 )
 

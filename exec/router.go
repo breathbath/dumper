@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/breathbath/dumper/config"
-	"github.com/breathbath/go_utils/utils/io"
+	"github.com/breathbath/go_utils/v3/pkg/io"
 )
 
 type Router struct {
