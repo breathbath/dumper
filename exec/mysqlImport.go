@@ -45,14 +45,15 @@ func (mie MysqlImportExecutor) Execute(
 	var fileTime time.Time
 
 	err := filepath.Walk(conf.DumpsFolderName, func(path string, info os.FileInfo, err error) error {
+		var e error
 		regx := regexp.MustCompile(`^\d{2}\.\d{2}\.\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{3}`)
 		timestampStr := regx.FindString(info.Name())
 		if timestampStr == "" {
 			return nil
 		}
-		fileTime, err = time.Parse("02.01.2006.15.04.05.000", timestampStr)
-		if err != nil {
-			io.OutputWarning("", "Cannot parse %s as time str", timestampStr)
+		fileTime, e = time.Parse("02.01.2006.15.04.05.000", timestampStr)
+		if e != nil {
+			io.OutputWarning("", "Cannot parse %q as time str: %v", timestampStr, e)
 			return nil
 		}
 
